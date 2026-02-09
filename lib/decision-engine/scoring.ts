@@ -144,6 +144,7 @@ function findAlternatives(currentId: string, userProfile: UserProfile): Alternat
             info,
             result: calculateScore({ id, name: id, data: info }, userProfile, new Date().getMonth() + 1, false)
         }))
+        .filter(d => d.result.matchScore >= 80)
         .sort((a, b) => b.result.matchScore - a.result.matchScore);
 
     // 1. Cheap Alternative
