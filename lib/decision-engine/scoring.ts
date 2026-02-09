@@ -1,6 +1,7 @@
 import { Destination } from '@/types/destination';
 import { UserProfile, DecisionResult, VerdictType } from '@/types/decision';
 import { DESTINATION_DATA } from '@/features/decision-flow/config/destinations';
+import { AlternativeRecommendation } from '@/types/decision';
 
 export function findBestMatch(userProfile: UserProfile): string {
     let bestScore = -1;
@@ -22,7 +23,8 @@ export function findBestMatch(userProfile: UserProfile): string {
 export function calculateScore(
     destination: Destination,
     userProfile: UserProfile,
-    currentMonth: number = new Date().getMonth() + 1
+    currentMonth: number = new Date().getMonth() + 1,
+    includeAlternatives: boolean = true
 ): DecisionResult {
     const { data } = destination;
     const answers = userProfile;
@@ -126,7 +128,7 @@ export function calculateScore(
             risk: Math.round(sRisk),
         },
         penalties,
-        alternatives: findAlternatives(destination.id, userProfile)
+        alternatives: includeAlternatives ? findAlternatives(destination.id, userProfile) : []
     };
 }
 
@@ -140,7 +142,7 @@ function findAlternatives(currentId: string, userProfile: UserProfile): Alternat
         .map(([id, info]) => ({
             id,
             info,
-            result: calculateScore({ id, name: id, data: info }, userProfile)
+            result: calculateScore({ id, name: id, data: info }, userProfile, new Date().getMonth() + 1, false)
         }))
         .sort((a, b) => b.result.matchScore - a.result.matchScore);
 
@@ -182,5 +184,3 @@ function findAlternatives(currentId: string, userProfile: UserProfile): Alternat
 
     return alternatives;
 }
-
-import { AlternativeRecommendation } from '@/types/decision';
