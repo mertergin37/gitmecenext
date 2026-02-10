@@ -6,9 +6,13 @@ import { QUESTIONS } from '@/features/decision-flow/config/questions';
 interface DecisionState {
     answers: UserProfile;
     currentQuestionIndex: number;
+    selectedDestination: string | null;
+    selectedMonth: number | null;
 
     // Actions
     setAnswer: (questionId: string, value: number) => void;
+    setDestination: (destinationId: string) => void;
+    setMonth: (month: number) => void;
     nextQuestion: () => void;
     prevQuestion: () => void;
     reset: () => void;
@@ -22,11 +26,19 @@ export const useDecisionStore = create<DecisionState>()(
         (set, get) => ({
             answers: {},
             currentQuestionIndex: 0,
+            selectedDestination: null,
+            selectedMonth: null,
 
             setAnswer: (questionId, value) =>
                 set((state) => ({
                     answers: { ...state.answers, [questionId]: value }
                 })),
+
+            setDestination: (destinationId) =>
+                set({ selectedDestination: destinationId }),
+
+            setMonth: (month) =>
+                set({ selectedMonth: month }),
 
             nextQuestion: () =>
                 set((state) => ({
@@ -38,7 +50,7 @@ export const useDecisionStore = create<DecisionState>()(
                     currentQuestionIndex: Math.max(state.currentQuestionIndex - 1, 0)
                 })),
 
-            reset: () => set({ answers: {}, currentQuestionIndex: 0 }),
+            reset: () => set({ answers: {}, currentQuestionIndex: 0, selectedDestination: null, selectedMonth: null }),
 
             isComplete: () => {
                 const state = get();

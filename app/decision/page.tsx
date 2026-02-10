@@ -1,6 +1,9 @@
 import { DecisionStepper } from '@/features/decision-flow/DecisionStepper';
 import { Header } from '@/components/layout/Header';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function DecisionPage() {
     return (
         <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4 relative">
@@ -16,12 +19,6 @@ export default function DecisionPage() {
                 <DecisionStepper />
             </div>
 
-            {/* Footer Info */}
-            <div className="absolute bottom-6 left-0 w-full text-center">
-                <p className="text-white/20 text-xs uppercase tracking-widest">
-                    Algorithm-First Decision Engine
-                </p>
-            </div>
         </main>
     );
 }

@@ -1,15 +1,21 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import { DecisionResult } from '@/types/decision';
 import { Destination } from '@/types/destination';
-import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Heart } from 'lucide-react';
+import { HistoryService } from '@/services/history.service';
 
 interface VerdictHeroProps {
     result: DecisionResult;
     destination: Destination;
+    savedDecisionId?: string | null;
 }
 
-export const VerdictHero: React.FC<VerdictHeroProps> = ({ result, destination }) => {
+export const VerdictHero: React.FC<VerdictHeroProps> = ({ result, destination, savedDecisionId }) => {
     const { verdict, matchScore } = result;
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const config = {
         git: {
@@ -40,8 +46,36 @@ export const VerdictHero: React.FC<VerdictHeroProps> = ({ result, destination })
 
     const Icon = config.icon;
 
+    const handleToggleFavorite = async () => {
+        if (!savedDecisionId || isUpdating) return;
+
+        setIsUpdating(true);
+        try {
+            await HistoryService.toggleFavorite(savedDecisionId, !isFavorite);
+            setIsFavorite(!isFavorite);
+        } catch (error) {
+            console.error('Failed to toggle favorite:', error);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     return (
-        <div className={`relative overflow-hidden rounded-[2.5rem] border ${config.border} ${config.bg} p-12 text-center backdrop-blur-2xl animate-fade-in-up shadow-2xl`}>
+        <div className={`relative overflow-hidden rounded-[2.5rem] border ${config.border} ${config.bg} p-12 text-center backdrop-blur-2xl animate-fade-in-up shadow-2xl group`}>
+            {/* Favorite Button (Only if saved) */}
+            {savedDecisionId && (
+                <button
+                    onClick={handleToggleFavorite}
+                    disabled={isUpdating}
+                    className={`absolute top-8 right-8 p-4 rounded-2xl border transition-all z-20 ${isFavorite
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20'
+                            : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white'
+                        }`}
+                >
+                    <Heart className={`w-6 h-6 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+            )}
+
             {/* Background Mesh Glow */}
             <div className={`absolute -top-20 -left-20 h-80 w-80 rounded-full ${config.bg} blur-[120px] opacity-40 animate-pulse-glow`} />
             <div className={`absolute -bottom-20 -right-20 h-80 w-80 rounded-full ${config.bg} blur-[120px] opacity-40 animate-pulse-glow`} />

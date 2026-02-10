@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { ArrowRight, ShieldCheck, BarChart3, BrainCircuit } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white relative selection:bg-purple-500/30">
@@ -15,22 +17,12 @@ export default function Home() {
       {/* Hero Section */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-4 text-center max-w-5xl mx-auto">
 
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8 animate-fade-in-up shadow-2xl shadow-purple-500/10">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="text-[10px] font-black tracking-[0.2em] text-white/60 uppercase">
-            Algorithm-First Decision Engine
-          </span>
-        </div>
 
         {/* Headline */}
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[0.95] animate-fade-in-up delay-100">
           Duygusal Kararlar <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/20">
-            Yerine Matematik.
+            Yerine Yapay Zeka.
           </span>
         </h1>
 

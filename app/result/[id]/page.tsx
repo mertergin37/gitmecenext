@@ -10,6 +10,10 @@ import { ShareVerdict } from '@/design-system/decision-components/ShareVerdict';
 import { UserProfile } from '@/types/decision';
 import { HistoryService } from '@/services/history.service';
 import { supabase } from '@/lib/supabase';
+import { UnsplashService } from '@/lib/images/unsplash';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // MOCK PROFILE FOR DEMO (Since we don't have the questionnaire state yet)
 const MOCK_PROFILE: UserProfile = {
@@ -39,16 +43,28 @@ export default async function ResultPage({ params, searchParams }: PageProps) {
         experience: Number(sParams.experience) || 3
     };
 
-    const destinationId = id.toUpperCase();
-    const destinationInfo = DESTINATION_DATA[destinationId];
+    const destinationId = id; // Keep original for AI (could be "Paris" or "KAPADOKYA")
+    let destinationInfo = DESTINATION_DATA[destinationId.toUpperCase()];
+    let isDynamic = false;
 
-    // 404 Handling
+    // AI Dynamic Discovery for ANY city not in our static config
+    if (!destinationInfo) {
+        try {
+            destinationInfo = await AIAdapter.discoverDestination(destinationId);
+            isDynamic = true;
+        } catch (error) {
+            console.error('Dynamic Discovery Failed:', error);
+        }
+    }
+
+    // 404 Handling (Only if discovery also fails)
     if (!destinationInfo) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black text-white">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">404</h1>
-                    <p className="text-white/60">Destinasyon bulunamadı.</p>
+                    <h1 className="text-6xl font-black mb-4">404</h1>
+                    <p className="text-white/40 uppercase tracking-widest text-xs">Destinasyon Analiz Edilemedi</p>
+                    <a href="/" className="mt-8 inline-block px-8 py-3 bg-white text-black font-black rounded-xl">Geri Dön</a>
                 </div>
             </div>
         );
@@ -56,26 +72,54 @@ export default async function ResultPage({ params, searchParams }: PageProps) {
 
     const destination = {
         id: destinationId,
-        name: destinationId.charAt(0) + destinationId.slice(1).toLowerCase(), // Capitalize
+        name: decodeURIComponent(destinationId).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' '),
         data: destinationInfo
     };
+
+    const month = sParams.month ? Number(sParams.month) : undefined;
+
+    // ... (rest of destination discovery logic)
 
     // 2. Engine Execution
     const decisionResult = calculateScore(destination, userProfile);
 
-    // 3. AI Analysis (Simulation Layer)
-    const aiResponse = await AIAdapter.generateDecisionResponse({
-        destination,
-        decision: decisionResult,
-        profile: userProfile
-    });
+    // 3. AI Analysis & Image Fetching (Parallel)
+    const [aiResponse, destinationImage] = await Promise.all([
+        AIAdapter.generateDecisionResponse({
+            destination,
+            decision: decisionResult,
+            profile: userProfile,
+            month: month
+        }),
+        UnsplashService.searchDestinationImage(destination.name)
+    ]);
+
+    // Override mathematical result with AI-driven result for the final verdict
+    const finalResult = {
+        ...decisionResult,
+        verdict: aiResponse.verdict,
+        matchScore: aiResponse.matchScore,
+        alternatives: aiResponse.alternatives
+            ? aiResponse.alternatives.map((alt) => ({
+                id: alt.name.toLowerCase().replace(/\s+/g, '-'),
+                name: alt.name,
+                type: 'vibe' as const, // Default to vibe for AI suggestions
+                reason: alt.reason,
+                matchScore: alt.matchScore
+            }))
+            : decisionResult.alternatives
+    };
 
     // 4. Persistence (Auto-save if user is logged in)
+    let savedDecisionId: string | null = null;
     if (supabase) {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                await HistoryService.saveDecision(user.id, destination, decisionResult);
+                const saved = await HistoryService.saveDecision(user.id, destination, finalResult);
+                if (saved) {
+                    savedDecisionId = (saved as any).id;
+                }
             }
         } catch (e) {
             console.warn('Failed to auto-save decision:', e);
@@ -84,14 +128,29 @@ export default async function ResultPage({ params, searchParams }: PageProps) {
 
     // 5. UI Rendering
     return (
-        <main className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8">
-            <div className="max-w-4xl mx-auto space-y-8">
+        <main className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 relative">
+            {/* Dynamic Background Image */}
+            {destinationImage && (
+                <>
+                    <div
+                        className="fixed inset-0 z-0 bg-cover bg-center opacity-30 saturate-0 hover:saturate-50 transition-all duration-1000"
+                        style={{ backgroundImage: `url(${destinationImage.url})` }}
+                    />
+                    <div className="fixed inset-0 z-1 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
+                </>
+            )}
+
+            <div className="max-w-4xl mx-auto space-y-8 relative z-10">
 
                 {/* Header */}
                 <Header />
 
                 {/* L3 Decision Components */}
-                <VerdictHero result={decisionResult} destination={destination} />
+                <VerdictHero
+                    result={finalResult}
+                    destination={destination}
+                    savedDecisionId={savedDecisionId}
+                />
 
                 {/* Grid Layout for Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -104,7 +163,7 @@ export default async function ResultPage({ params, searchParams }: PageProps) {
                         <RiskPanel penalties={decisionResult.penalties} />
 
                         {/* Context/Summary Placeholder */}
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
                             <h3 className="font-bold mb-2 text-white/90">Yapay Zeka Özeti</h3>
                             <p className="text-sm text-white/60 leading-relaxed mb-4">
                                 {aiResponse.summary}
@@ -142,7 +201,16 @@ export default async function ResultPage({ params, searchParams }: PageProps) {
                 </div>
 
                 {/* L3 Alternative Recommendations */}
-                <AlternativeCards alternatives={decisionResult.alternatives || []} />
+                <AlternativeCards alternatives={finalResult.alternatives || []} />
+
+                {/* Attribution */}
+                {destinationImage && (
+                    <div className="flex justify-center pb-8">
+                        <p className="text-[10px] text-white/20 uppercase tracking-widest">
+                            Fotoğraf: <a href={destinationImage.photographer.link} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{destinationImage.photographer.name}</a> / Unsplash
+                        </p>
+                    </div>
+                )}
 
                 {/* Bottom Spacer */}
                 <div className="h-24" />

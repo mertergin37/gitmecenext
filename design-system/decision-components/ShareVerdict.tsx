@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Twitter, Send, Share2 } from 'lucide-react';
+import { Twitter, Send, Share2, Camera } from 'lucide-react';
 import { DecisionResult } from '@/types/decision';
 import { Destination } from '@/types/destination';
 
@@ -53,21 +53,36 @@ export const ShareVerdict: React.FC<ShareVerdictProps> = ({ result, destination 
         window.open(url, '_blank');
     };
 
+    const handleImageShare = () => {
+        const ogUrl = `/api/og?name=${encodeURIComponent(destName)}&score=${score}&verdict=${result.verdict}`;
+        window.open(ogUrl, '_blank');
+    };
+
     return (
-        <div className="flex gap-4 w-full">
+        <div className="flex flex-col gap-4 w-full">
+            <div className="flex gap-4 w-full">
+                <button
+                    onClick={handleShareX}
+                    className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl border border-white/10 transition-all group"
+                >
+                    <Twitter className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                    <span>X</span>
+                </button>
+                <button
+                    onClick={handleShareWA}
+                    className="flex-1 flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-xl border border-emerald-500/20 transition-all group"
+                >
+                    <Send className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span>WhatsApp</span>
+                </button>
+            </div>
+
             <button
-                onClick={handleShareX}
-                className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl border border-white/10 transition-all group"
+                onClick={handleImageShare}
+                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-white font-bold py-4 rounded-xl border border-white/10 transition-all group shadow-lg shadow-purple-500/5"
             >
-                <Twitter className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                <span>X'te Paylaş</span>
-            </button>
-            <button
-                onClick={handleShareWA}
-                className="flex-1 flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-xl border border-emerald-500/20 transition-all group"
-            >
-                <Send className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>WhatsApp</span>
+                <Camera className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
+                <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">Instagram Story Görseli Oluştur</span>
             </button>
         </div>
     );
