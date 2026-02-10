@@ -19,6 +19,7 @@ export class GeminiProvider implements AIProvider {
 
     async generate(request: AIRequest): Promise<AIResponse> {
         const { destination, profile } = request;
+        console.log(`[GeminiProvider] Generating analysis for ${destination.name}, month: ${request.month || 'N/A'}`);
 
         const prompt = `
             Sen profesyonel ve dürüst bir seyahat stratejistisin. Görevin, kullanıcının seçtiği destinasyonu (Şehir) ve verdiği yanıtları analiz edip GİT ya da GİTME kararı vermektir.
@@ -55,9 +56,11 @@ export class GeminiProvider implements AIProvider {
         `;
 
         try {
+            console.log('[GeminiProvider] Calling Gemini API...');
             const result = await this.model.generateContent(prompt);
             const response = await result.response;
             const text = response.text();
+            console.log('[GeminiProvider] ✅ Received response from Gemini');
             const data = JSON.parse(text);
 
             return {
@@ -71,7 +74,7 @@ export class GeminiProvider implements AIProvider {
                 provider: 'gemini'
             };
         } catch (error) {
-            console.error("Gemini API Error:", error);
+            console.error("[GeminiProvider] ❌ API Error:", error);
             throw error;
         }
     }

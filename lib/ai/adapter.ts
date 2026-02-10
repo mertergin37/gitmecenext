@@ -20,12 +20,16 @@ class AIAdapterService {
 
     async generateDecisionResponse(request: AIRequest): Promise<AIResponse> {
         const provider = this.getProvider();
+        const providerName = provider instanceof GeminiProvider ? 'Gemini' : 'Simulation';
+        console.log(`[AIAdapter] Selected provider: ${providerName}`);
+
         try {
             const response = await provider.generate(request);
-            console.log(`AI Response generated via ${response.provider}`);
+            console.log(`[AIAdapter] ✅ Response generated via ${response.provider}`);
             return response;
         } catch (error) {
-            console.error('AI Provider Failed, falling back to Simulation:', error);
+            console.error(`[AIAdapter] ❌ ${providerName} Provider Failed:`, error);
+            console.log('[AIAdapter] Falling back to Simulation');
             return await this.fallback.generate(request);
         }
     }
